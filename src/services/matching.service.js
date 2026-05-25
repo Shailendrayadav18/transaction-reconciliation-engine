@@ -1,22 +1,25 @@
-module.exports=(
-
-users,
-exchange,
-config
-
-)=>{
+module.exports = (
+  users,
+  exchange,
+  config
+) => {
 
 const report=[]
 
 const used=
 new Set()
 
+
+
 for(
 const u
 of users
 ){
 
-let best=null
+let found=
+null
+
+
 
 for(
 const e
@@ -25,24 +28,32 @@ of exchange
 
 if(
 used.has(
-e._id
+String(e._id)
 )
 )
 continue
+
+
 
 if(
-u.asset
-!==e.asset
+u.asset!==e.asset
 )
 continue
+
+
 
 if(
-u.type
-!==e.type
+u.type!==e.type
 )
 continue
 
-const time=
+
+
+found=e
+
+
+
+const timeDiff=
 
 Math.abs(
 
@@ -58,7 +69,9 @@ e.timestamp
 
 )
 
-const qty=
+
+
+const qtyDiff=
 
 Math.abs(
 
@@ -68,6 +81,8 @@ e.quantity
 
 )
 
+
+
 const allowed=
 
 u.quantity
@@ -76,32 +91,27 @@ config.quantityTolerance
 /
 100
 
+
+
 if(
 
-time
+timeDiff
 <=
 config.timestampTolerance
 *1000
 
 &&
 
-qty
-<=allowed
+qtyDiff
+<=
+allowed
 
 ){
 
-best=e
-
-break
-
-}
-
-}
-
-if(best){
-
 used.add(
-best._id
+String(
+e._id
+)
 )
 
 report.push({
@@ -114,14 +124,51 @@ reason:
 
 user:u,
 
-exchange:
-best
+exchange:e
 
 })
 
+found=null
+
+break
+
 }
 
-else{
+
+
+}
+
+
+
+if(
+found
+){
+
+used.add(
+String(
+found._id
+)
+)
+
+report.push({
+
+category:
+"Conflicting",
+
+reason:
+"timestamp or quantity outside tolerance",
+
+user:u,
+
+exchange:found
+
+})
+
+continue
+
+}
+
+
 
 report.push({
 
@@ -129,7 +176,7 @@ category:
 "Unmatched User",
 
 reason:
-"missing exchange",
+"not found",
 
 user:u
 
@@ -137,19 +184,21 @@ user:u
 
 }
 
-}
 
-for(
-const e
-of exchange
-){
+
+exchange.forEach(
+e=>{
 
 if(
 used.has(
+String(
 e._id
 )
 )
-continue
+)
+return
+
+
 
 report.push({
 
@@ -157,13 +206,17 @@ category:
 "Unmatched Exchange",
 
 reason:
-"missing user",
+"not found",
 
 exchange:e
 
 })
 
 }
+
+)
+
+
 
 return report
 
